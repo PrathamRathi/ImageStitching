@@ -3,7 +3,7 @@ import numpy as np
 import cv2 as cv
 import os
 
-data_dir = 'collapsed_data'
+data_dir = './collapsed_data'
 
 def get_data(sub_dir, size=(256,256)):
     dir = os.path.join(data_dir, sub_dir)
@@ -30,5 +30,4 @@ def get_data(sub_dir, size=(256,256)):
     print('done')
     return x,y
 
-get_data('train')
 

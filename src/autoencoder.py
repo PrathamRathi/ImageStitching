@@ -3,18 +3,24 @@ import keras
 from keras.layers import Conv2D, Conv2DTranspose
 from imageViz import ImageVisualizer
 from preprocess import get_data
+import cv2 as cv
 
 class Autoencoder(tf.keras.Model):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.encoder = keras.Sequential([
-             Conv2D(8, 8, 4, **conv_kwargs),
-            Conv2D(8, 8, 2, **conv_kwargs)
+             Conv2D(16, 8, 4, **conv_kwargs),
+            Conv2D(16, 8, 4, **conv_kwargs),
+            keras.layers.MaxPooling2D(),
+            Conv2D(8, 4, 2, **conv_kwargs),
+            Conv2D(8, 4, 2, **conv_kwargs)
         ], name="ae_encoder")
 
         self.decoder = keras.Sequential([
-        Conv2DTranspose(8, 8, 2, **conv_kwargs),
-        Conv2DTranspose(3, 8, 4, **conv_kwargs)
+             Conv2DTranspose(8, 4, 2, **conv_kwargs),
+        Conv2DTranspose(8, 4, 2, **conv_kwargs),
+        Conv2D(16, 8, 4, **conv_kwargs),
+        Conv2DTranspose(3, 8, 4, padding='same', kernel_initializer=tf.random_normal_initializer(stddev=.1))
     ], name='ae_decoder')
 
     def call(self, inputs):
@@ -55,9 +61,27 @@ ae_model.compile(
 )
 
 x_train,y_train = get_data('train')
-x_valid,y_valid = get_data('valid')
-x_test,y_test = get_data('test')
+x_valid,y_valid = get_data('validation')
 
 # Train the model
+print('Fitting model on training data')
 ae_model.fit(x_train, y_train, epochs=5, batch_size=64, validation_data=(x_valid,y_valid))
+print('------------------------')
 
+print('Evaluating model on testing data')
+x_test,y_test = get_data('test')
+ae_model.evaluate(x_test, y_test, batch_size=32)
+
+x_show = x_test[:-10]
+y_show = y_test[:-10]
+
+for i in range(10):
+    x = x_show[i]
+    pred = ae_model.predict(x)
+    pred = pred.numpy()
+    x *= 255
+    pred *= 255
+    cv.imshow()
+    cv.imshow('Image', pred)
+
+    
