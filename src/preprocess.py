@@ -30,4 +30,8 @@ def get_data(sub_dir, size=(256,256)):
     print('done')
     return x,y
 
+img = cv.imread('collapsed_data/train/Coast-Train (12).jpeg')
+img = cv.resize(img, (128,128))
+cv.imwrite('result.jpeg', img)
+
 
