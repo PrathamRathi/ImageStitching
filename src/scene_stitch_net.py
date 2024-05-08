@@ -45,12 +45,30 @@ class SceneStitchNet(tf.keras.Model):
         avg_loss = np.float32(tot_loss / 200.0)
         print("epoch_num:", epoch_num, ",", "avg_train_loss:", avg_loss)
         self.validate()
+    def display_stitching(self, batchsize_50_num):
+        test_batch = np.load("test_arr_data_batchsize_50/arr_" + str(batchsize_50_num) + ".npy")
+        test_stitch_x = np.concatenate((test_batch[:25, :, :50, :], test_batch[25:, :, 100:, :]), axis=2)
+        test_stitch_pred = self.predict(test_stitch_x)
+        test_stitch_recon = np.concatenate((test_batch[:25, :, :50, :], test_stitch_pred, test_batch[25:, :, 100:, :]), axis=2)
+        for i in range(25):
+            plt.imshow(test_stitch_recon[i, :, :, :])
+            plt.show()
 
 model = SceneStitchNet()
-num_epochs = 20
+model.build(input_shape=(50, 150, 100, 3))
+model.load_weights("scene_stitch.weights.h5")
+
+model.display_stitching(0)
+
+'''
+num_epochs = 10
 model.validate()
 for epoch_num in range(num_epochs):
     model.train(epoch_num)
+model.save_weights("scene_stitch.weights.h5")
+'''
+
+'''
 test_batch = np.load("test_arr_data_batchsize_50/arr_0.npy")
 test_x = np.concatenate((test_batch[:, :, :50, :], test_batch[:, :, 100:, :]), axis=2)
 test_y = test_batch[:, :, 50:100, :]
@@ -60,3 +78,4 @@ for i in range(5):
     plt.show()
     plt.imshow(test_y[i, :, :, :])
     plt.show()
+'''
