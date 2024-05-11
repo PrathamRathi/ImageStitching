@@ -2,3 +2,5 @@ data
 *.png
 collapsed_data
 models
+archive-resize
+*.jpeg
