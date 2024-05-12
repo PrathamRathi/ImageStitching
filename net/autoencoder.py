@@ -26,6 +26,7 @@ class Autoencoder(tf.keras.Model):
             Conv2DTranspose(3, 8, 2, padding='same', kernel_initializer=tf.random_normal_initializer(stddev=.1), activation='sigmoid')
         ], name='ae_decoder')
 
+
     def call(self, inputs):
         inputs = self.encoder(inputs)
         inputs = self.decoder(inputs)
@@ -40,7 +41,6 @@ def custom_loss(y_true, y_pred):
     mae = mae_loss(y_true, y_pred)
     bce = bce_loss(y_true, y_pred)
     loss =  .3*mse + .7*mae
-    #loss = mae
     return loss
 
 # class Autoencoder(tf.keras.Model):

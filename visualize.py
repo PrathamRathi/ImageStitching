@@ -11,6 +11,8 @@ import numpy as np
 isColab = "google.colab" in sys.modules
 data_dir = 'collapsed_data'
 results_dir = 'results'
+panorama_dir = 'panoramas'
+stitch_dir = 'stitches'
 # this also works:
 # isColab = "COLAB_GPU" in os.environ
 
@@ -25,8 +27,7 @@ def parse_arguments():
     parser.add_argument("-name", type=str, help = "file of model to visualize", default= "model.keras", required=True)
     return parser.parse_args()
 
-def get_masked_data(dir, mask_denom=5,target_size=(256,256)):
-    # dir = os.path.join(data_dir, sub_dir)
+def get_masked_data(dir, denom=5,target_size=(256,256)):
     files = os.listdir(dir)
     x = []
     y = []
@@ -42,9 +43,9 @@ def get_masked_data(dir, mask_denom=5,target_size=(256,256)):
     y = np.array(y, dtype=np.float32)
     x = np.copy(y)
     h,w = target_size
-    sec_w = w//mask_denom
+    sec_w = w//denom
     # Make middle black
-    offset = (mask_denom // 2)
+    offset = (denom // 2)
     x[:,:,sec_w * offset:sec_w * (offset + 1),:]=0
     y=y/255
     x = x/255
@@ -79,13 +80,67 @@ def write_stitchings(model, x, name='stitch',size=(256,256), denom=5):
         cv2.imwrite(path + '-mod.jpeg', 255*mod_img)
         cv2.imwrite(path + '-pred.jpeg', 255*pred[i])
 
-if __name__ == "__main__":
-    args = parse_arguments()
-    model_path = 'models/' + args.name
-    model = keras.models.load_model(model_path,custom_objects={'Autoencoder': Autoencoder, 'custom_loss': custom_loss})
+def make_panorama(model, file1, file2, name, denom=5, size=(256,256)):
+    img1 = cv2.imread(file1)/255
+    img2 = cv2.imread(file2)/255
+    h,w = size
+    sec_w = w//denom
+    offset = (denom // 2)
+    new_img = img1.copy()
 
-    x_test,y_test = get_masked_data(data_dir + '/test')
+    new_img[:,sec_w*0:sec_w*2,:]=img1[:,sec_w*3:sec_w*5,:]
+    new_img[:,sec_w * offset:sec_w * (offset + 1),:]=0
+    new_img[:,sec_w*3:sec_w*5,:]=img2[:,sec_w*0:sec_w*2,:]
+
+    batched = np.expand_dims(new_img, axis=0)
+    pred = model.predict(batched)[0]
+
+    file_name = name + '.jpeg'
+    cv2.imwrite(panorama_dir + '/pred' + file_name, pred*255)
+    transition = pred[:,sec_w * offset:sec_w * (offset + 1),:]
+    concat = np.hstack([img1, img2])
+    cv2.imwrite(panorama_dir + '/concat-' + file_name, concat * 255)
+
+    trans_width = transition.shape[1]
+    start = (w*2 - trans_width)//2
+    end = start + trans_width
+    concat[:, start:end,:] = transition
+    cv2.imwrite(panorama_dir + '/blend-' + file_name, concat * 255)
+    panorama = np.hstack([np.hstack([img1, transition]), img2]) * 255
+    cv2.imwrite(panorama_dir + '/pano-' + file_name, panorama)
+
+def model_visual_test(model):
+    x_test,y_test = get_masked_data(data_dir + '/test', denom=5)
     x=x_test[:5]
     y=y_test[:5]
     write_reconstructions(model,x,y)
-    write_stitchings(model,x)
+    write_stitchings(model,x,denom=5)
+
+def stitch_images(model, file1, file2, name, denom=5, size=(256,256)):
+    img1 = cv2.imread(file1)/255
+    img2 = cv2.imread(file2)/255
+    h,w = size
+    rec_w = w//denom
+    offset = (denom // 2)
+    new_img = img1.copy()
+    new_img[:,rec_w*3:rec_w*5,:]=img2[:,rec_w*3:rec_w*5,:]
+    new_img[:,rec_w * offset:rec_w * (offset + 1),:]=0
+
+    file_name = name + '.jpeg'
+    cv2.imwrite(stitch_dir + '/orig-' + file_name, 255*new_img)
+    batched = np.expand_dims(new_img, axis=0)
+    pred = model.predict(batched)[0]
+    cv2.imwrite(stitch_dir + '/stitched-' + file_name, 255*pred)
+    
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    model_path = 'models/' + args.name
+    model = keras.models.load_model(model_path,custom_objects={'custom_loss': custom_loss})
+    
+    img1 = 'testing/Glacier/Glacier (324).jpeg'
+    img2 = 'testing/Glacier/Glacier (319).jpeg'
+    
+    make_panorama(model,img1,img2, 'glacier_test')
+    stitch_images(model,img1,img2, 'glacier_test')
+

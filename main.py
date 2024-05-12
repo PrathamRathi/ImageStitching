@@ -30,7 +30,7 @@ if __name__ == "__main__":
     model.build(input_shape = input_shape)   ## Required to see architecture summary
     model.summary()
     model.compile(
-        optimizer   = keras.optimizers.legacy.Adam(learning_rate=0.001),
+        optimizer   = keras.optimizers.legacy.Adam(learning_rate=0.003),
         loss        = custom_loss,
         metrics     = [
             tf.keras.metrics.MeanSquaredError(),
@@ -51,13 +51,13 @@ if __name__ == "__main__":
         history = model.fit(training_generator, epochs=args.epochs, validation_data=validation_generator)
 
     print('Evaluating model')
-    test_generator = MaskedImageDataGenerator(TEST_DIR, mask_denom=7, target_size=(args.size, args.size), batch_size=args.batch)
+    test_generator = MaskedImageDataGenerator(TEST_DIR, mask_denom=5, target_size=(args.size, args.size), batch_size=args.batch)
     model.evaluate(test_generator)
 
     print('----------------------------------------------------------------')
 
     print('Saving model')
     model_name = args.name #get_model_name(args)
-    model.save(MODEL_DIR + model_name + '.keras')
+    model.save(MODEL_DIR + model_name)
     out_file = open(HISTORY_DIR + model_name + '.json', "w") 
     json.dump(history.history, out_file)
