@@ -6,7 +6,7 @@ import math
 import numpy as np
 
 class MaskedImageDataGenerator(keras.utils.Sequence):
-  def __init__(self, directory, mask_denom=5, target_size=(256, 256), batch_size=32):
+  def __init__(self, directory, is_vae=False, mask_denom=5, target_size=(256, 256), batch_size=32):
     """
     Initializes the data generator.
 
@@ -19,6 +19,7 @@ class MaskedImageDataGenerator(keras.utils.Sequence):
     """
     self.directory = directory
     self.mask_denom = mask_denom
+    self.is_vae = is_vae
     self.target_size = target_size
     self.batch_size = batch_size
     self.filenames = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
@@ -50,11 +51,12 @@ class MaskedImageDataGenerator(keras.utils.Sequence):
       y.append(image)
     y = np.array(y, dtype=np.float32)
     x = np.copy(y)
-    h,w = self.target_size
-    sec_w = w//self.mask_denom
-    # Make middle black
-    offset = (self.mask_denom // 2)
-    x[:,:,sec_w * offset:sec_w * (offset + 1),:]=0
+    if not self.is_vae:
+      h,w = self.target_size
+      sec_w = w//self.mask_denom
+      # Make middle black
+      offset = (self.mask_denom // 2)
+      x[:,:,sec_w * offset:sec_w * (offset + 1),:]=0
     y=y/255
     x = x/255
     return x,y

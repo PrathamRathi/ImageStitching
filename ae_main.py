@@ -1,4 +1,5 @@
 from net.autoencoder import Autoencoder, custom_loss
+from net.vae import VAE
 from src.data_generator import MaskedImageDataGenerator
 import tensorflow as tf
 import keras
@@ -16,7 +17,6 @@ def parse_arguments():
     parser.add_argument("-epochs", type=int, default=10, help = "epochs")
     parser.add_argument("-name", type=str, help = "name of final model", default= "model.keras", required=True)
     parser.add_argument("-size", type=int, help = "size of input images", default= 256)
-    parser.add_argument("-model", type=str, help = "type of model to use (dense, conv, etc.)") 
     parser.add_argument("-batch", type=int, help="batch size", default=100)   
     return parser.parse_args()
 
@@ -35,13 +35,18 @@ if __name__ == "__main__":
         metrics     = [
             tf.keras.metrics.MeanSquaredError(),
             tf.keras.metrics.MeanAbsoluteError()
-            #tf.keras.metrics.BinaryCrossentropy(),
         ]
     )
     
+    print('-------------------------------- Model Summaries --------------------------------')
+    model.encoder.summary()
+    model.decoder.summary()
+    model.summary()
+
     training_generator = MaskedImageDataGenerator(TRAIN_DIR, mask_denom=5, target_size=(args.size, args.size), batch_size=args.batch)
     validation_generator = MaskedImageDataGenerator(TEST_DIR, mask_denom=5, target_size=(args.size, args.size), batch_size=args.batch)
 
+    print('-------------------------------- Training Model --------------------------------')
     devices = tf.config.list_physical_devices()
     device = '/device:CPU:0'
     for device in devices:
@@ -50,13 +55,11 @@ if __name__ == "__main__":
     with tf.device(device):
         history = model.fit(training_generator, epochs=args.epochs, validation_data=validation_generator)
 
-    print('Evaluating model')
+    print('-------------------------------- Evaluating Model --------------------------------')
     test_generator = MaskedImageDataGenerator(TEST_DIR, mask_denom=5, target_size=(args.size, args.size), batch_size=args.batch)
     model.evaluate(test_generator)
 
-    print('----------------------------------------------------------------')
-
-    print('Saving model')
+    print('-------------------------------- Saving Model --------------------------------')
     model_name = args.name #get_model_name(args)
     model.save(MODEL_DIR + model_name)
     out_file = open(HISTORY_DIR + model_name + '.json', "w") 

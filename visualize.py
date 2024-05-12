@@ -1,30 +1,23 @@
 from net.autoencoder import Autoencoder, custom_loss
+from net.vae import VAE
 from src.data_generator import MaskedImageDataGenerator
 import tensorflow as tf
 import keras
 import argparse
 import cv2
 import os
-import sys
 import numpy as np
 
-isColab = "google.colab" in sys.modules
 data_dir = 'collapsed_data'
 results_dir = 'results'
 panorama_dir = 'panoramas'
 stitch_dir = 'stitches'
-# this also works:
-# isColab = "COLAB_GPU" in os.environ
 
-if isColab:
-    from google.colab import drive
-    drive.mount("/content/drive", force_remount=True)
-
-    data_dir = ("/content/drive/MyDrive/collapsed_data")
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-name", type=str, help = "file of model to visualize", default= "model.keras", required=True)
+    parser.add_argument("-model", type=str, help = "type of model: ae, vae", default= "ae", required=True)
     return parser.parse_args()
 
 def get_masked_data(dir, denom=5,target_size=(256,256)):
@@ -51,13 +44,20 @@ def get_masked_data(dir, denom=5,target_size=(256,256)):
     x = x/255
     return x,y
 
-def write_reconstructions(model, x,y, name='recon'):
-    pred = model.predict(x)
+def write_reconstructions(model, x,y, is_vae=False, name='recon'):
+    pred=None
+    if is_vae:
+        pred = model(x)[0]
+        pred = pred.numpy()
+    else:
+        pred = model.predict(x)
+
     n = x.shape[0]
     for i in range(n):
         path = results_dir + '/' + name + str(i) 
-        cv2.imshow('test', y[i])
-        cv2.waitKeyEx()
+        # cv2.imshow('test', y[i])
+        # cv2.waitKeyEx()
+        print(pred[i])
         cv2.imwrite(path + '-truth.jpeg', 255*y[i])
         cv2.imwrite(path + '-pred.jpeg', 255*pred[i])
 
@@ -109,12 +109,14 @@ def make_panorama(model, file1, file2, name, denom=5, size=(256,256)):
     panorama = np.hstack([np.hstack([img1, transition]), img2]) * 255
     cv2.imwrite(panorama_dir + '/pano-' + file_name, panorama)
 
-def model_visual_test(model):
+def model_visual_test(model, is_vae=False):
     x_test,y_test = get_masked_data(data_dir + '/test', denom=5)
     x=x_test[:5]
     y=y_test[:5]
-    write_reconstructions(model,x,y)
-    write_stitchings(model,x,denom=5)
+    write_reconstructions(model,x,y, is_vae=is_vae)
+    if not is_vae:
+        write_stitchings(model,x,denom=5)
+
 
 def stitch_images(model, file1, file2, name, denom=5, size=(256,256)):
     img1 = cv2.imread(file1)/255
@@ -136,11 +138,16 @@ def stitch_images(model, file1, file2, name, denom=5, size=(256,256)):
 if __name__ == "__main__":
     args = parse_arguments()
     model_path = 'models/' + args.name
-    model = keras.models.load_model(model_path,custom_objects={'custom_loss': custom_loss})
+    model = None
+    if args.model == 'ae':
+        model = keras.models.load_model(model_path,custom_objects={'custom_loss': custom_loss})
+    if args.model == 'vae':
+        model = keras.models.load_model(model_path)
     
+    model_visual_test(model, is_vae=True)
     img1 = 'testing/Glacier/Glacier (324).jpeg'
     img2 = 'testing/Glacier/Glacier (319).jpeg'
     
-    make_panorama(model,img1,img2, 'glacier_test')
-    stitch_images(model,img1,img2, 'glacier_test')
+    # make_panorama(model,img1,img2, 'glacier_test')
+    # stitch_images(model,img1,img2, 'glacier_test')
 
