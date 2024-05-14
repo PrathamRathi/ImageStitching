@@ -17,10 +17,16 @@ stitch_dir = 'stitches'
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-name", type=str, help = "file of model to visualize", default= "model.keras", required=True)
-    parser.add_argument("-model", type=str, help = "type of model: ae, vae", default= "ae", required=True)
+    parser.add_argument("-model", type=str, help = "type of model: ae, vae", default= "ae", )
     return parser.parse_args()
 
 def get_masked_data(dir, denom=5,target_size=(256,256)):
+    """
+        Returns masked data from given directory
+        dir: directory to get data from
+        denom: denominator of masked portion
+        target_size: size of images
+    """
     files = os.listdir(dir)
     x = []
     y = []
@@ -45,6 +51,13 @@ def get_masked_data(dir, denom=5,target_size=(256,256)):
     return x,y
 
 def write_reconstructions(model, x,y, is_vae=False, name='recon'):
+    """
+        Given a model, write its reconstructions on data to directory
+        x: masked images to be reconstructed
+        y: unmasked, true images
+        is_vae: specifies if the model is a vae or regular ae
+        name: name of files
+    """
     pred=None
     if is_vae:
         pred = model(x)[0]
@@ -144,10 +157,10 @@ if __name__ == "__main__":
     if args.model == 'vae':
         model = keras.models.load_model(model_path)
     
-    model_visual_test(model, is_vae=True)
-    img1 = 'testing/Glacier/Glacier (324).jpeg'
-    img2 = 'testing/Glacier/Glacier (319).jpeg'
+    model_visual_test(model, is_vae=False)
+    img1 = 'testing/Coast/Coast-Test (105).jpeg'
+    img2 = 'testing/Coast/Coast-Test (106).jpeg'
     
-    # make_panorama(model,img1,img2, 'glacier_test')
-    # stitch_images(model,img1,img2, 'glacier_test')
+    make_panorama(model,img1,img2, 'coast_test')
+    stitch_images(model,img1,img2, 'coast_test')
 
