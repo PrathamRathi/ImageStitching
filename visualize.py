@@ -157,10 +157,10 @@ if __name__ == "__main__":
     if args.model == 'vae':
         model = keras.models.load_model(model_path)
     
-    model_visual_test(model, is_vae=False)
-    img1 = 'testing/Coast/Coast-Test (105).jpeg'
-    img2 = 'testing/Coast/Coast-Test (106).jpeg'
+    model_visual_test(model, is_vae=True)
+    # img1 = 'testing/Coast/Coast-Test (105).jpeg'
+    # img2 = 'testing/Coast/Coast-Test (106).jpeg'
     
-    make_panorama(model,img1,img2, 'coast_test')
-    stitch_images(model,img1,img2, 'coast_test')
+    # make_panorama(model,img1,img2, 'coast_test')
+    # stitch_images(model,img1,img2, 'coast_test')
 
